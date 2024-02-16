@@ -111,9 +111,8 @@
          <!-- overall info box (initially hidden) -->
         <div id="add_info" class="add_info" style="display: none;">
             <p style = 'text-align: justify';>Cette application cartographique propose de visualiser deux résultats de classification supervisée
-            (interprétation mathématique des éléments d’une image en classes d’objets d’après leur réponse spectrale par machine),
             obtenus d'après une série temporelle d'images Sentinel-2 couvrant une période s'étendant de janvier 2021 à février 2022, 
-            sur la base de la BD Forêt® V2 de l'IGN (dont l'ambition est de constituer un référentiel forestier national).</p>
+            sur la base de la BD Forêt® V2 de l'IGN (référentiel forestier national).</p>
 
             <p style = 'text-align: justify';>Les deux classifications proposées ici tiennent compte chacune d'un niveau de nomenclature,
             autrement dit d'un degré de complexité des classes d'objets à identifier, différent, 
@@ -121,12 +120,12 @@
             Le territoire d'études se restreint ici essentiellement à une partie de la Haute-Garonne, comprenant notamment
             la forêt domaniale de Bouconne.</p>
 
-            <p style = 'text-align: justify';>L'objectif de ces classifications est d'évaluer dans quelles mesure la télédétection peut pallier
+            <p style = 'text-align: justify';>L'objectif de ces classifications est d'évaluer dans quelle mesure la télédétection peut pallier
             l'inconvénient temporel de la BD Forêt® V2 (défaut de mise à jour, élaboration de la V2 entre 2007 et 2018)
             ainsi que l'inconvénient d'exhaustivité dont elle pâtit (finesse de la détection intra-peuplements).
             </p>
 
-            <p style = 'text-align: justify';> La validation de ces données (par le biais de matrices de confusion) a souligné 
+            <p style = 'text-align: justify';> La validation de ces données, par le biais de matrices de confusion, a souligné 
             la difficulté du modèle utilisé (Random Forest) à identifier les classes d'objets de façon satisfaisante, 
             surtout à mesure que les nomenclatures sollicitées se complexifient. 
             Les données présentées ici ne constituent donc pas une source fiable pour évaluer la viabilité de 
@@ -137,7 +136,7 @@
             (SIGMA - promotion 2024).
             </p>
 
-            <img src="SIGMA.png" alt="sigma_logo">
+            <img src="data/SIGMA.png" alt="sigma_logo">
         </div>
 
         <!-- layer info box -->
@@ -207,7 +206,7 @@
             });
 
             // set base maps
-            var darkLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+            var darkLayer = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | &copy; <a href="https://www.stadiamaps.com/">Stadia Maps</a>'
             }).addTo(map);
 

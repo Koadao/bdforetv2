@@ -206,7 +206,10 @@
             });
 
             // set base maps
-            var darkLayer = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+            var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                minZoom: 8,
+                maxZoom: 25,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
 
             var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -235,7 +238,7 @@
 
             // set layer control
             var baseMaps = {
-                'OpenStreetMap': darkLayer,
+                'OpenStreetMap': osm,
                 'Satellite': Esri_WorldImagery
             };
 

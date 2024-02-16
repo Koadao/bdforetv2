@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <!-- favicon -->
+    <link rel="icon" href="data/tree.svg">
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+
+        <title>CS - BD Forêt® V2</title>
+
+        <!-- leaflet set up -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+        <!-- jQuery set up -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+        <style>
+            /*base*/
+            body {
+                padding: 0;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                height: 100vh; /* use viewport height */
+                background-color: #353839;
+            }
+
+            html {
+                height: 100%;
+            }
+
+            /* title strip */
+            .title-strip {
+                background-color: #353839;
+                color: #F8F8FF;
+                padding: 10px;
+                font-size: 24px;
+                font-weight: bold;
+                text-align: center;
+            }
+
+            /* container for title strip and layer info box */
+            .header {
+                flex: 0 0 auto; 
+            }
+
+            /* layer info box */
+            .info-box {
+                background-color: #778899;
+                padding: 10px;
+                margin: 10px;
+                border: 1px solid #ccc;
+            }
+
+            /* overall info box */
+            #add_info {
+                display: none;
+                position: fixed; 
+                top: 50%; /* center vertically */
+                left: 50%; /* center horizontally */
+                transform: translate(-50%, -50%); /* center the box */
+                background-color: #ffffff;
+                padding: 20px;
+                border: 1px solid #ccc;
+                z-index: 1000; /* above other content */
+            }
+
+            /* map */
+            #map {
+                flex: 1; /* useful flexbox -> grow to fill remaining space */
+                width: 100%;
+            }
+
+            .name {
+                float: right; 
+                margin-right: 10px; 
+                color: #ffffff; 
+                font-size: 12px; 
+                font-weight: bold; 
+            }
+
+            .add_info img {
+                display: block;
+                margin: 0 auto; 
+                max-width: 100%; /* so that image does not exceed its container's width */
+                width: 100px;
+                height: auto; 
+            }
+        </style>
+
+
+    </head>
+    
+    <body>
+
+        <!-- title strip -->
+        <div class="title-strip">
+            Classification supervisée - BD Forêt® V2
+            <button id="infoButton">Info</button> <!-- button -->
+            <div class="name">Tom Mervant - 2024</div>
+        </div>
+
+         <!-- overall info box (initially hidden) -->
+        <div id="add_info" class="add_info" style="display: none;">
+            <p style = 'text-align: justify';>Cette application cartographique propose de visualiser deux résultats de classification supervisée
+            (interprétation mathématique des éléments d’une image en classes d’objets d’après leur réponse spectrale par machine),
+            obtenus d'après une série temporelle d'images Sentinel-2 couvrant une période s'étendant de janvier 2021 à février 2022, 
+            sur la base de la BD Forêt® V2 de l'IGN (dont l'ambition est de constituer un référentiel forestier national).</p>
+
+            <p style = 'text-align: justify';>Les deux classifications proposées ici tiennent compte chacune d'un niveau de nomenclature,
+            autrement dit d'un degré de complexité des classes d'objets à identifier, différent, 
+            le niveau 2 étant plus complexe que son précédent.
+            Le territoire d'études se restreint ici essentiellement à une partie de la Haute-Garonne, comprenant notamment
+            la forêt domaniale de Bouconne.</p>
+
+            <p style = 'text-align: justify';>L'objectif de ces classifications est d'évaluer dans quelles mesure la télédétection peut pallier
+            l'inconvénient temporel de la BD Forêt® V2 (défaut de mise à jour, élaboration de la V2 entre 2007 et 2018)
+            ainsi que l'inconvénient d'exhaustivité dont elle pâtit (finesse de la détection intra-peuplements).
+            </p>
+
+            <p style = 'text-align: justify';> La validation de ces données (par le biais de matrices de confusion) a souligné 
+            la difficulté du modèle utilisé (Random Forest) à identifier les classes d'objets de façon satisfaisante, 
+            surtout à mesure que les nomenclatures sollicitées se complexifient. 
+            Les données présentées ici ne constituent donc pas une source fiable pour évaluer la viabilité de 
+            BD Forêt® V2 en tant qu'échantillons de référence, comme l'a montré l'étude dans laquelle elles s'inscrivent.</p>
+
+            <p style = 'text-align: justify';>La production de ces données, ainsi que leur visualisation par la présente application, 
+            s'inscrivent dans le cadre du master ScIences Géomatiques en environneMent et Aménagement 
+            (SIGMA - promotion 2024).
+            </p>
+
+            <img src="SIGMA.png" alt="sigma_logo">
+        </div>
+
+        <!-- layer info box -->
+        <div id="info-box" class="info-box">
+            Sélectionner une couche raster
+        </div>        
+          
+
+        <div id="map"></div>
+
+        <script>
+            // display overall info box
+            function toggleAdditionalInfoBox() {
+                var additionalInfoBox = document.getElementById('add_info');
+                if (additionalInfoBox.style.display === 'none') {
+                    additionalInfoBox.style.display = 'block';
+                } else {
+                    additionalInfoBox.style.display = 'none'; 
+                }
+            }
+
+            // launch overall info box -- button interaction
+            document.getElementById('infoButton').addEventListener('click', function(event) {
+                event.stopPropagation(); 
+                toggleAdditionalInfoBox(); // launch
+            });
+
+            // close overall info box - button interaction or else
+            document.addEventListener('click', function(event) {
+                var additionalInfoBox = document.getElementById('add_info');
+                var infoButton = document.getElementById('infoButton');
+                if (event.target !== additionalInfoBox && event.target !== infoButton && !additionalInfoBox.contains(event.target)) {
+                    additionalInfoBox.style.display = 'none';
+                }
+            });
+
+
+            // update the info box content accordingly
+            function updateInfoBox(content) {
+                $('#info-box').html(content);
+            }
+
+            // update the legend content accordingly
+            function updateLegend(content) {
+                $('#legend').html(content);
+            }
+
+
+            // add WMS legend
+            function addWmsLegend(map, legendUrl) {
+                var legend = L.control({ position: 'bottomright' });
+                legend.onAdd = function () {
+                    var div = L.DomUtil.create('div', 'info legend');
+                    div.innerHTML += '<img src="' + legendUrl + '" alt="Legend">';
+                    return div;
+                };
+                return legend;
+            }
+
+            // set map
+            var map = L.map('map', {
+                center: [43.6013, 1.4447], // Toulouse
+                zoom: 10,
+                //zoomSnap: 0,
+                //zoomDelta: 1,
+                zoomControl: false
+            });
+
+            // set base maps
+            var darkLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | &copy; <a href="https://www.stadiamaps.com/">Stadia Maps</a>'
+            }).addTo(map);
+
+            var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                minZoom: 8,
+                maxZoom: 25,
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            });
+
+            // set WMS layers
+            var wmsLayerGroup1 = L.layerGroup();
+            var LVL1 = L.tileLayer.wms('https://www.geotests.net/geoserver/tarby_ruiz_sauger_mervant/wms', {
+                layers: 'tarby_ruiz_sauger_mervant:carte_essences_lvl1',
+                format: 'image/png',
+                transparent: true,
+                styles: 'carte_essences_lvl1'
+            }).addTo(wmsLayerGroup1);
+
+            var wmsLayerGroup2 = L.layerGroup();
+            var LVL2 = L.tileLayer.wms('https://www.geotests.net/geoserver/tarby_ruiz_sauger_mervant/wms', {
+                layers: 'tarby_ruiz_sauger_mervant:carte_essences_lvl2',
+                format: 'image/png',
+                transparent: true,
+                styles: 'carte_essences_lvl2'
+            }).addTo(wmsLayerGroup2);
+
+
+            // set layer control
+            var baseMaps = {
+                'OpenStreetMap': darkLayer,
+                'Satellite': Esri_WorldImagery
+            };
+
+            var overlayMaps = {
+                'LVL 1': wmsLayerGroup1,
+                'LVL 2': wmsLayerGroup2
+            };
+
+            // add layer control
+            var layerControl = L.control.layers(baseMaps, overlayMaps, { position: 'topleft' }).addTo(map);
+
+            // when switching layers
+            map.on('overlayadd', function (event) {
+                var layerName = event.name;
+                var legendUrl = '';
+
+                // determine the legend URL based on the added layer
+                switch (layerName) {
+                    case 'LVL 1':
+                        legendUrl = 'https://www.geotests.net/geoserver/tarby_ruiz_sauger_mervant/wms?REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=tarby_ruiz_sauger_mervant:carte_essences_lvl1';
+                        updateInfoBox('0 = no data | 1 = feuillus | 2 = conifères');
+                        break;
+                    case 'LVL 2':
+                        legendUrl = 'https://www.geotests.net/geoserver/tarby_ruiz_sauger_mervant/wms?REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=tarby_ruiz_sauger_mervant:carte_essences_lvl2';
+                        updateInfoBox('0 = no data | 10 = feuillus | 11 = peupleraie | 21 = conifères autres que pins | 22 = pins | 23 = mélange pins et autres conifères');
+                        break;
+                    default:
+                        break;
+                }
+
+                // remove the current legend before adding a new one
+                if (map.legend) {
+                    map.removeControl(map.legend);
+                }
+
+                // add legend if legend URL is available
+                if (legendUrl !== '') {
+                    var legend = addWmsLegend(map, legendUrl);
+                    legend.addTo(map);
+                    map.legend = legend; 
+                }
+
+                // check if both layers are already active
+                var activeLayers = Object.keys(map._layers)
+                    .filter(function (key) { return map._layers[key].overlay && (map._layers[key].overlay.name === 'LVL 1' || map._layers[key].overlay.name === 'LVL 2'); });
+                
+                // if both layers are active, show a warning message
+                if (activeLayers.length >= 2) {
+                    alert("Please deactivate one of the raster layers before activating another one.");
+                }
+            });
+
+            // when deactivating layer(s)
+            map.on('overlayremove', function (event) {
+                // check if there are any active raster layers
+                var activeLayers = Object.keys(map._layers)
+                    .filter(function (key) { return map._layers[key].overlay && (map._layers[key].overlay.name === 'LVL 1' || map._layers[key].overlay.name === 'LVL 2'); });
+                
+                // if no raster layers are active, remove the legend
+                if (activeLayers.length === 0 && map.legend) {
+                    map.removeControl(map.legend);
+                }
+
+                // if no raster layers are active, clear the info box content
+                if (activeLayers.length === 0) {
+                    document.getElementById('info-box').innerHTML = 'Sélectionner une couche raster'; 
+                }
+            });
+
+
+            // add Zoom Control
+            L.control.zoom({}).addTo(map);
+
+
+        </script>
+
+        
+    </body>
+</html>
